@@ -6,6 +6,7 @@ services:
       context: elasticsearch/
       args:
         ELK_VERSION: $ELK_VERSION
+    container_name: elk         
     volumes:
       - type: bind
         source: ./elasticsearch/config/elasticsearch.yml
@@ -17,15 +18,44 @@ services:
     ports:
       - "19200:9200"
       - "19300:9300"
-    environment:
-      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+    # environment:
+    #   ES_JAVA_OPTS: "-Xmx256m -Xms256m"
      # ELASTIC_PASSWORD: changeme
       # Use single node discovery in order to disable production mode and avoid bootstrap checks.
       # see: https://www.elastic.co/guide/en/elasticsearch/reference/current/bootstrap-checks.html
-      discovery.type: single-node
+   #   discovery.type: single-node
+    environment:
+      node.name: elasticsearch
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+      discovery.type: "zen"
+      discovery.zen.ping.unicast.hosts: "elasticsearch2,elasticsearch3"      
     # networks:
     #   - elk
+  elasticsearch2:
+    build:
+      context: elasticsearch/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    container_name: elk2       
+    environment:
+      node.name: elasticsearch2
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+      discovery.type: "zen"
+      node.attr.zone: cold       
+      discovery.zen.ping.unicast.hosts: "elasticsearch,elasticsearch3"
 
+  elasticsearch3:
+    build:
+      context: elasticsearch/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    container_name: elk3    
+    environment:
+      node.name: elasticsearch3
+      node.attr.zone: warm      
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+      discovery.type: "zen"
+      discovery.zen.ping.unicast.hosts: "elasticsearch,elasticsearch2"
   # logstash:
   #   build:
   #     context: logstash/
